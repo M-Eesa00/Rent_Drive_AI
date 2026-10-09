@@ -1,0 +1,40 @@
+.dashboard-page {
+    color: #1f2937;
+    padding-bottom: 2rem;
+}
+
+.dashboard-page .dashboard-panel,
+.dashboard-page .kpi-card {
+    border: 1px solid #e5eaf1;
+    border-radius: 1rem;
+    box-shadow: 0 0.25rem 1rem rgba(31, 41, 55, 0.04);
+}
+
+.dashboard-page .dashboard-panel {
+    background: #fff;
+}
+
+.dashboard-page .kpi-card {
+    height: 100%;
+    background: #fff;
+}
+
+.dashboard-page .kpi-icon {
+    display: inline-flex;
+    width: 2.75rem;
+    height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.8rem;
+    background: #eef4ff;
+    color: #315da8;
+    font-size: 1.1rem;
+}
+
+.dashboard-page .section-label {
+    color: #68778b;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
