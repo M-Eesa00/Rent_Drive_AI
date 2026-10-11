@@ -10,13 +10,23 @@ class carsController extends Controller
 {
     public function carsList()
     {
-        $cars = Car::all();
-        return view("cars.cars_list", compact("cars"));
+        return view("cars.cars_list");
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json(Car::all());
+        $search = trim((string) $request->query('search', ''));
+
+        $cars = Car::query()
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('brand', 'like', "%{$search}%")
+                        ->orWhere('model', 'like', "%{$search}%");
+                });
+            })
+            ->get();
+
+        return response()->json($cars);
     }
 
     public function create()

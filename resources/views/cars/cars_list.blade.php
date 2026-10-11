@@ -14,9 +14,18 @@
             </div>
         </div>
 
-        // FILTER SEARCH
+        <!-- FILTER SEARCH -->
 
-        
+        <div class="row">
+            <form id="cars-filter-form" class="col-md-6 d-flex gap-2 mb-4">
+                <input type="text" id="search-bar" placeholder="Search by brand or model..." class="form-control">
+                <button type="submit" class="btn btn-primary">Filter</button>
+                <button type="reset" class="btn btn-outline-secondary">Reset</button>
+            </form>
+        </div>
+
+
+
         <div class="table-responsive">
             <table class="table table-hover mt-4">
                 <thead>
@@ -25,38 +34,15 @@
                         <th>Brand / Model</th>
                         <th>Year</th>
                         <th>Gear Type</th>
+                        <th>Status</th>
                         <th>Price/day</th>
                         <th class="text-center">Actions</th>
                     </tr>
                 </thead>
-                <tbody>
-                    @forelse ($cars as $car)
+                <tbody id="cars-table-body" data-storage-url="{{ asset('storage') }}" data-csrf-token="{{ csrf_token() }}">
                     <tr>
-                        <td>
-                            @if ($car->image)
-                            <img src="{{ asset('storage/' . $car->image) }}" alt="{{ $car->brand }} {{ $car->model }}" width="72" height="48" class="rounded" style="object-fit: cover;">
-                            @else
-                            <span class="text-muted small">No photo</span>
-                            @endif
-                        </td>
-                        <td><span class="fw-semibold">{{ $car->brand }}</span><br><span class="text-muted">{{ $car->model }}</span></td>
-                        <td>{{ $car->year }}</td>
-                        <td>{{ $car->gear_type }}</td>
-                        <td>Rs{{ $car->daily_rate }}</td>
-                        <td class="text-end text-nowrap">
-                            <a href="{{ route('cars.edit', $car) }}" class="btn btn-sm btn-outline-primary">Edit</a>
-                            <form action="{{ route('cars.destroy', $car) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this car? Cars with booking history cannot be deleted.')">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
-                            </form>
-                        </td>
+                        <td colspan="6" class="text-center text-muted py-4">Loading cars...</td>
                     </tr>
-                    @empty
-                    <tr>
-                        <td colspan="6" class="text-center text-muted py-5">No cars have been added.</td>
-                    </tr>
-                    @endforelse
                 </tbody>
             </table>
         </div>
@@ -93,113 +79,8 @@
 
 </main>
 
-//FILTER SEARCH
 
-            <form id="cars-filter-form" class="row g-3 mb-4">
-
-                <div class="col-md-3">
-                    <label for="filter-name" class="form-label fw-semibold">Brand</label>
-                    <input type="text" id="filter-name" name="name" class="form-control" placeholder="Search by Name...">
-                </div>
-                <div class="col-md-3">
-                    <label for="filter-email" class="form-label fw-semibold">Model</label>
-                    <input type="text" id="filter-email" name="email" class="form-control" placeholder="Search by Email...">
-                </div>
-                <div class="col-6 gap-2 mt-5">
-                    <button type="submit" class="btn btn-primary">Filter</button>
-                    <a href="{{ request()->url() }}" class="btn btn-outline-secondary">Reset</a>
-                </div>
-
-            </form>
-
-<div class="modal fade" id="addCarModal" tabindex="-1" aria-labelledby="addCarModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-md modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="addCarModalLabel">r</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-
-            
-            <form action="{{ route('cars.store') }}" method="POST" enctype="multipart/form-data">
-                @csrf
-                <input type="hidden" name="_form" value="car">
-                <div class="modal-body">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label for="carBrand" class="form-label">Brand</label>
-                            <input type="text" class="form-control" id="carBrand" name="brand" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="carModel" class="form-label">Model</label>
-                            <input type="text" class="form-control" id="carModel" name="model" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="carYear" class="form-label">Year</label>
-                            <input type="number" class="form-control" id="carYear" name="year" min="2000" max="2030" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="carPlateNumber" class="form-label">Plate Number</label>
-                            <input type="text" class="form-control" id="carPlateNumber" name="plate_number" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="carMileage" class="form-label">Mileage (km)</label>
-                            <input type="number" class="form-control" id="carMileage" name="totalMileage" min="0" step="0.01" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="carDailyRate" class="form-label">Daily Rate</label>
-                            <input type="number" class="form-control" id="carDailyRate" name="daily_rate" min="0" step="0.01" required>
-                        </div>
-                        <div class="col-md-4">
-                            <span class="form-label d-block">Gear Type</span>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" id="carGearAutomatic" name="gear_type" value="Automatic" required>
-                                <label class="form-check-label" for="carGearAutomatic">Automatic</label>
-                            </div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" id="carGearManual" name="gear_type" value="Manual" required>
-                                <label class="form-check-label" for="carGearManual">Manual</label>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="carFuelType" class="form-label">Fuel Type</label>
-                            <select class="form-select" id="carFuelType" name="fuel_type" required>
-                                <option value="" selected disabled>Choose...</option>
-                                <option value="Gasoline">Gasoline</option>
-                                <option value="Diesel">Diesel</option>
-                                <option value="Electric">Electric</option>
-                                <option value="Hybrid">Hybrid</option>
-                                <option value="Petrol">Petrol</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="carSeats" class="form-label">Number of Seats</label>
-                            <input type="number" class="form-control" id="carSeats" name="seats" min="1" max="15" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="carStatus" class="form-label">Status</label>
-                            <select class="form-select" id="carStatus" name="status" required>
-                                <option value="available" selected>Available</option>
-                                <option value="rented">Rented</option>
-                                <option value="maintenance">Maintenance</option>
-                            </select>
-                        </div>
-                        <div class="col-12">
-                            <label for="carImage" class="form-label">Car Image</label>
-                            <input type="file" class="form-control" id="carImage" name="image" accept=".jpg,.jpeg,.png,.webp,image/*">
-                            <div class="form-text">Maximum size: 5 MB.</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="reset" class="btn btn-outline-secondary">Reset</button>
-                    <button type="submit" class="btn btn-primary">Save Car</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+@include('cars.add_car_modal')
 
 @endsection
 
@@ -228,6 +109,80 @@
 
     $(document).ready(function() {
 
+        const carsTableBody = $('#cars-table-body');
+        const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, character => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        })[character]);
+
+        $('#cars-filter-form').on('submit', function(event) {
+            event.preventDefault();
+            fetchCars({
+                search: $('#search-bar').val().trim()
+            });
+        });
+
+        $('#cars-filter-form').on('reset', function() {
+            window.setTimeout(() => fetchCars({}), 0);
+        });
+
+        function fetchCars(params) {
+            const query = new URLSearchParams(params).toString();
+
+            $.ajax({
+                url: '/api/cars' + (query ? `?${query}` : ''),
+                method: 'GET',
+                success: function(cars) {
+                    carsTableBody.empty();
+
+                    if (cars.length === 0) {
+                        carsTableBody.append('<tr><td colspan="6" class="text-center text-muted py-4">No cars found.</td></tr>');
+                        return;
+                    }
+
+                    const storageUrl = carsTableBody.data('storage-url');
+                    const csrfToken = escapeHtml(carsTableBody.data('csrf-token'));
+
+                    cars.forEach(car => {
+                        const imagePath = car.image ?
+                            car.image.split('/').map(encodeURIComponent).join('/') :
+                            '';
+                        const imageCell = imagePath ?
+                            `<img src="${escapeHtml(`${storageUrl}/${imagePath}`)}" alt="${escapeHtml(`${car.brand || 'Car'} ${car.model || ''}`)}" width="72" height="48" class="rounded" style="object-fit: cover;">` :
+                            '<span class="text-muted small">No photo</span>';
+                        const carId = encodeURIComponent(car.id);
+
+                        carsTableBody.append(`
+                            <tr>
+                                <td>${imageCell}</td>
+                                <td><span class="fw-semibold">${escapeHtml(car.brand)}</span><br><span class="text-muted">${escapeHtml(car.model)}</span></td>
+                                <td>${escapeHtml(car.year)}</td>
+                                <td>${escapeHtml(car.gear_type)}</td>
+                                <td>${escapeHtml(car.status)}</td>
+                                <td>Rs${escapeHtml(car.daily_rate)}</td>
+                                <td class="text-end text-nowrap">
+                                    <a href="/cars/${carId}/edit" class="btn btn-sm btn-outline-primary">Edit</a>
+                                    <form action="/cars/${carId}" method="POST" class="d-inline" onsubmit="return confirm('Delete this car? Cars with booking history cannot be deleted.')">
+                                        <input type="hidden" name="_token" value="${csrfToken}">
+                                        <input type="hidden" name="_method" value="DELETE">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        `);
+                    });
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error fetching cars:', error);
+                    carsTableBody.html('<tr><td colspan="6" class="text-center text-danger py-4">Unable to load cars. Please refresh and try again.</td></tr>');
+                }
+            });
+        }
+
+        fetchCars({});
 
         //CARS TABLE
 
@@ -303,15 +258,17 @@
                     loadAvailables.innerHTML = availableHTML;
                 },
                 error: function(xhr, status, error) {
-                    console.error("Failed to fetch Airtable data:", error);
+                    console.error("Failed to fetch cars:", error);
                 },
             });
         }
         ///////
 
         loadAvailableCars();
-    })
+    });
 </script>
+
+@endsection
 
 <div class="modal fade" id="bookingModal" tabindex="-1" aria-labelledby="bookingModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -376,5 +333,3 @@
         }, 3000);
     });
 </script>
-
-@endsection

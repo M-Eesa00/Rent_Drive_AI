@@ -8,6 +8,14 @@
         <input type="email" class="form-control" id="{{ $idPrefix }}Email" name="email" value="{{ old('email', $formCustomer?->email) }}" maxlength="255" required>
     </div>
     <div class="col-md-6">
+        <label for="{{ $idPrefix }}Password" class="form-label">Password @unless($formCustomer)<span class="text-danger">*</span>@else<span class="text-muted">(leave blank to keep current)</span>@endunless</label>
+        <input type="password" class="form-control" id="{{ $idPrefix }}Password" name="password" minlength="6" autocomplete="new-password" {{ $formCustomer ? '' : 'required' }}>
+    </div>
+    <div class="col-md-6">
+        <label for="{{ $idPrefix }}PasswordConfirmation" class="form-label">Confirm password @unless($formCustomer)<span class="text-danger">*</span>@endunless</label>
+        <input type="password" class="form-control" id="{{ $idPrefix }}PasswordConfirmation" name="password_confirmation" minlength="6" autocomplete="new-password" {{ $formCustomer ? '' : 'required' }}>
+    </div>
+    <div class="col-md-6">
         <label for="{{ $idPrefix }}Phone" class="form-label">Phone number <span class="text-danger">*</span></label>
         <input type="tel" class="form-control" id="{{ $idPrefix }}Phone" name="phone" value="{{ old('phone', $formCustomer?->phone) }}" maxlength="17" required>
     </div>

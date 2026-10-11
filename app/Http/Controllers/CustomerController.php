@@ -31,6 +31,7 @@ class CustomerController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:customers,email'],
+            'password' => ['required', 'string', 'min:6', 'confirmed'],
             'phone' => ['required', 'string', 'max:30'],
             'address' => ['nullable', 'string', 'max:500'],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
@@ -59,6 +60,7 @@ class CustomerController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email:rfc,dns', 'email', 'max:255', 'unique:customers,email,' . $customer->id],
+            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
             'phone' => ['required', 'string', 'max:30', 'regex:/^\+92\s3[0-9]{2}-[0-9]{7}$/'],
             'address' => ['nullable', 'string', 'max:500'],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
