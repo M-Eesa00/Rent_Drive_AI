@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Bookings;
 use App\Models\Car;
-use App\Models\Customer;
+use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class bookingsController extends Controller
 {
@@ -14,7 +16,7 @@ class bookingsController extends Controller
     {
         $bookings = Bookings::with(['customer', 'car'])->get();
         $cars = Car::orderBy('brand')->get();
-        $customers = Customer::orderBy('name')->get();
+        $customers = User::where('role', 'user')->orderBy('name')->get();
 
         return view("bookings.list", compact('bookings', 'cars', 'customers'));
     }
@@ -22,7 +24,7 @@ class bookingsController extends Controller
     public function edit(Bookings $booking)
     {
         $cars = Car::orderBy('brand')->get();
-        $customers = Customer::orderBy('name')->get();
+        $customers = User::where('role', 'user')->orderBy('name')->get();
 
         return view('bookings.edit', compact('booking', 'cars', 'customers'));
     }
@@ -45,14 +47,23 @@ class bookingsController extends Controller
         ]);
 
         $car = Car::findOrFail($validated['car_id']);
-        $customer = Customer::updateOrCreate(
-            ['email' => $validated['customer_email']],
-            [
-                'name' => $validated['customer_name'],
-                'phone' => $validated['customer_phone'],
-                'address' => $validated['customer_address'] ?? null,
-            ]
-        );
+        $customer = User::firstOrNew(['email' => $validated['customer_email']]);
+        if ($customer->exists && $customer->getAttribute('role') !== 'user') {
+            throw ValidationException::withMessages([
+                'customer_email' => 'This email is already associated with a non-customer account.',
+            ]);
+        }
+
+        $customerAttributes = [
+            'name' => $validated['customer_name'],
+            'phone' => $validated['customer_phone'],
+            'address' => $validated['customer_address'] ?? null,
+        ];
+        if (!$customer->exists) {
+            $customerAttributes['password'] = Str::random(64);
+            $customerAttributes['role'] = 'user';
+        }
+        $customer->fill($customerAttributes)->save();
         $days = Carbon::parse($validated['start_date'])
             ->diffInDays(Carbon::parse($validated['end_date']));
 
@@ -72,7 +83,7 @@ class bookingsController extends Controller
     {
         $validated = $request->validate([
             'car_id' => ['required', 'exists:cars,id'],
-            'customer_id' => ['required', 'exists:customers,id'],
+            'customer_id' => ['required', 'exists:users,id'],
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after:start_date'],
             'status' => ['required', 'in:pending,confirmed,active,completed,cancelled'],

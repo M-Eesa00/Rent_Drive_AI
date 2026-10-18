@@ -3,7 +3,10 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
+use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 
 class LoginController extends Controller
 {
@@ -27,11 +30,6 @@ class LoginController extends Controller
      */
     protected $redirectTo = '/home';
 
-    protected function guard()
-    {
-        return auth('admin');
-    }
-
     /**
      * Create a new controller instance.
      *
@@ -39,13 +37,25 @@ class LoginController extends Controller
      */
     public function __construct()
     {
-        $this->middleware('guest:admin')->except('logout');
-        $this->middleware('auth:admin')->only('logout');
+        $this->middleware('guest')->except('logout');
+        $this->middleware('auth')->only('logout');
     }
 
-    public function logout()
+    protected function authenticated(Request $request, $user): ?RedirectResponse
+    {
+        if ($user instanceof User && $user->getAttribute('role') === 'admin' && !$request->wantsJson()) {
+            return redirect()->route('dashboard');
+        }
+
+        return null;
+    }
+
+    public function logout(Request $request): RedirectResponse
     {
         $this->guard()->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
         return redirect('/login');
     }
 }

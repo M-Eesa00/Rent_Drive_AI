@@ -12,5 +12,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/cars', [carsController::class, 'index']);
 Route::get('/bookings', bookingsController::class . '@index');
-Route::get('/customers', [CustomerController::class, 'apiIndex']);
-Route::post('/customers', [CustomerController::class, 'store']);
+Route::middleware(['auth:sanctum', 'admin-only'])->group(function () {
+    Route::get('/customers', [CustomerController::class, 'apiIndex']);
+    Route::post('/customers', [CustomerController::class, 'store']);
+});

@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Bookings;
 use App\Models\Car;
-use App\Models\Customer;
+use App\Models\User;
 
 class dashboardController extends Controller
 {
@@ -31,7 +31,7 @@ class dashboardController extends Controller
             'activeBookings' => $bookingStatusCounts->get('active', 0),
             'availableCars' => $carStatusCounts->get('available', 0),
             'totalCars' => $totalCars,
-            'totalCustomers' => Customer::count(),
+            'totalCustomers' => User::where('role', 'user')->count(),
             'paidRevenue' => Bookings::where('payment_status', 'paid')->sum('total_price'),
         ];
 

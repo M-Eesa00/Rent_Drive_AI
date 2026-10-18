@@ -10,7 +10,7 @@ class UserController extends Controller
 {
     public function index()
     {
-        $users = User::latest()->get();
+        $users = User::where('role', 'admin')->latest()->get();
 
         return view('users.index', compact('users'));
     }
@@ -23,6 +23,8 @@ class UserController extends Controller
 
     public function edit(User $user)
     {
+        abort_unless($user->getAttribute('role') === 'admin', 404);
+
         return view('users.create', compact('user'));
     }
 
@@ -31,7 +33,7 @@ class UserController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:6', 'confirmed'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ]);
 
@@ -41,6 +43,7 @@ class UserController extends Controller
             $validated['image_path'] = $request->file('image')->store('users', 'public');
         }
 
+        $validated['role'] = 'admin';
         User::create($validated);
 
         return redirect()->route('users.index')->with('success', 'User added successfully.');
@@ -48,6 +51,8 @@ class UserController extends Controller
 
     public function update(Request $request, User $user)
     {
+        abort_unless($user->getAttribute('role') === 'admin', 404);
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email,' . $user->id],
@@ -75,6 +80,8 @@ class UserController extends Controller
 
     public function destroy(User $user)
     {
+        abort_unless($user->getAttribute('role') === 'admin', 404);
+
         if ($user->image_path) {
             Storage::disk('public')->delete($user->image_path);
         }

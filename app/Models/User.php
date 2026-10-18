@@ -22,6 +22,10 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
+        'phone',
+        'address',
+        'image_path',
     ];
 
     /**
@@ -49,6 +53,6 @@ class User extends Authenticatable
 
     public function bookings()
     {
-        return $this->hasMany(Bookings::class);
+        return $this->hasMany(Bookings::class, 'customer_id');
     }
 }

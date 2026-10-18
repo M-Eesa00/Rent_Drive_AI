@@ -9,11 +9,11 @@
     </div>
     <div class="col-md-6">
         <label for="{{ $idPrefix }}Password" class="form-label">Password @unless($formCustomer)<span class="text-danger">*</span>@else<span class="text-muted">(leave blank to keep current)</span>@endunless</label>
-        <input type="password" class="form-control" id="{{ $idPrefix }}Password" name="password" minlength="6" autocomplete="new-password" {{ $formCustomer ? '' : 'required' }}>
+        <input type="password" class="form-control" id="{{ $idPrefix }}Password" name="password" minlength="8" autocomplete="new-password" {{ $formCustomer ? '' : 'required' }}>
     </div>
     <div class="col-md-6">
         <label for="{{ $idPrefix }}PasswordConfirmation" class="form-label">Confirm password @unless($formCustomer)<span class="text-danger">*</span>@endunless</label>
-        <input type="password" class="form-control" id="{{ $idPrefix }}PasswordConfirmation" name="password_confirmation" minlength="6" autocomplete="new-password" {{ $formCustomer ? '' : 'required' }}>
+        <input type="password" class="form-control" id="{{ $idPrefix }}PasswordConfirmation" name="password_confirmation" minlength="8" autocomplete="new-password" {{ $formCustomer ? '' : 'required' }}>
     </div>
     <div class="col-md-6">
         <label for="{{ $idPrefix }}Phone" class="form-label">Phone number <span class="text-danger">*</span></label>

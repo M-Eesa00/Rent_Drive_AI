@@ -15,10 +15,10 @@ Route::get('/', function () {
 
 Auth::routes();
 
-Route::group(['middleware' => ['auth:admin']], function () {
+Route::group(['middleware' => ['auth']], function () {
     Route::get('cars/create', [carsController::class, 'create'])->name('cars.create')->middleware('admin-only');
-    Route::get('cars/{car}/edit', [carsController::class, 'edit'])->name('cars.edit');
-    Route::post('cars', [carsController::class, 'store'])->name('cars.store');
+    Route::get('cars/{car}/edit', [carsController::class, 'edit'])->name('cars.edit')->middleware('admin-only');
+    Route::post('cars', [carsController::class, 'store'])->name('cars.store')->middleware('admin-only');
     Route::put('cars/{car}', [carsController::class, 'update'])->name('cars.update')->middleware('admin-only');
     Route::delete('cars/{car}', [carsController::class, 'destroy'])->name('cars.destroy')->middleware('admin-only');
     Route::get('bookings', bookingsController::class . '@listBookings')->name('show_booking_list');
@@ -26,21 +26,21 @@ Route::group(['middleware' => ['auth:admin']], function () {
     Route::get('bookings/{booking}/edit', [bookingsController::class, 'edit'])->name('bookings.edit');
     Route::put('bookings/{booking}', [bookingsController::class, 'update'])->name('bookings.update');
     Route::delete('bookings/{booking}', [bookingsController::class, 'destroy'])->name('bookings.destroy');
-    Route::get('customers', [CustomerController::class, 'index'])->name('customers.index');
-    Route::get('customers/create', [CustomerController::class, 'create'])->name('customers.create');
-    Route::get('customers/{customer}/edit', [CustomerController::class, 'edit'])->name('customers.edit');
-    Route::post('customers', [CustomerController::class, 'store'])->name('customers.store');
-    Route::put('customers/{customer}', [CustomerController::class, 'update'])->name('customers.update');
-    Route::delete('customers/{customer}', [CustomerController::class, 'destroy'])->name('customers.destroy');
+    Route::get('customers', [CustomerController::class, 'index'])->name('customers.index')->middleware('admin-only');
+    Route::get('customers/create', [CustomerController::class, 'create'])->name('customers.create')->middleware('admin-only');
+    Route::get('customers/{customer}/edit', [CustomerController::class, 'edit'])->name('customers.edit')->middleware('admin-only');
+    Route::post('customers', [CustomerController::class, 'store'])->name('customers.store')->middleware('admin-only');
+    Route::put('customers/{customer}', [CustomerController::class, 'update'])->name('customers.update')->middleware('admin-only');
+    Route::delete('customers/{customer}', [CustomerController::class, 'destroy'])->name('customers.destroy')->middleware('admin-only');
     Route::get('cars_details', carsController::class . '@carsDetails');
-    Route::get('dashboard', dashboardController::class . '@index')->name('dashboard');
-    Route::get('users', [UserController::class, 'index'])->name('users.index');
+    Route::get('dashboard', dashboardController::class . '@index')->name('dashboard')->middleware('admin-only');
+    Route::get('users', [UserController::class, 'index'])->name('users.index')->middleware('admin-only');
     Route::get('cars', carsController::class . '@carsList')->name('cars.cars_list');
-    Route::get('users/create', [UserController::class, 'create'])->name('users.create');
-    Route::get('users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
-    Route::post('users', [UserController::class, 'store'])->name('users.store');
-    Route::put('users/{user}', [UserController::class, 'update'])->name('users.update');
-    Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+    Route::get('users/create', [UserController::class, 'create'])->name('users.create')->middleware('admin-only');
+    Route::get('users/{user}/edit', [UserController::class, 'edit'])->name('users.edit')->middleware('admin-only');
+    Route::post('users', [UserController::class, 'store'])->name('users.store')->middleware('admin-only');
+    Route::put('users/{user}', [UserController::class, 'update'])->name('users.update')->middleware('admin-only');
+    Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy')->middleware('admin-only');
 });
 
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');

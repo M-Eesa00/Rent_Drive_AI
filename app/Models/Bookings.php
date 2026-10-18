@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use app\Controller\App\Http\Controllers\CustomerController;
+use App\Models\User;
 
 class Bookings extends Model
 {
@@ -22,7 +22,7 @@ class Bookings extends Model
 
     public function customer()
     {
-        return $this->belongsTo(Customer::class);
+        return $this->belongsTo(User::class, 'customer_id');
     }
     public function car()
     {
