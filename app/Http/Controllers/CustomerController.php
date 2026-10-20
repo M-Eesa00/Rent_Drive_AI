@@ -21,6 +21,17 @@ class CustomerController extends Controller
         return view('customers.index', compact('customers'));
     }
 
+    public function show(User $customer)
+    {
+        abort_unless($customer->getAttribute('role') === 'user', 404);
+
+        $customer->load([
+            'bookings' => fn ($query) => $query->with('car')->latest('start_date')->latest('id'),
+        ]);
+
+        return view('customers.show', compact('customer'));
+    }
+
     public function apiIndex()
     {
         return response()->json(User::where('role', 'user')->with('bookings')->get());

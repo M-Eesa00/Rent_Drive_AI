@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\User;
 
 class Bookings extends Model
@@ -20,11 +21,12 @@ class Bookings extends Model
         'payment_status'
     ];
 
-    public function customer()
+    public function customer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'customer_id');
     }
-    public function car()
+
+    public function car(): BelongsTo
     {
         return $this->belongsTo(Car::class);
     }

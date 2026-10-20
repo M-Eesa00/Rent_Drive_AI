@@ -8,9 +8,11 @@ use App\Models\Car;
 
 class carsController extends Controller
 {
-    public function carsList()
+    public function carsList(Request $request)
     {
-        return view("cars.cars_list");
+        return view('cars.cars_list', [
+            'isAdmin' => $request->user()?->role === 'admin',
+        ]);
     }
 
     public function index(Request $request)
@@ -18,12 +20,32 @@ class carsController extends Controller
         $search = trim((string) $request->query('search', ''));
 
         $cars = Car::query()
+            ->where('status', 'available')
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($query) use ($search) {
                     $query->where('brand', 'like', "%{$search}%")
                         ->orWhere('model', 'like', "%{$search}%");
                 });
             })
+            ->get();
+
+        return response()->json($cars);
+    }
+
+    public function adminIndex(Request $request)
+    {
+        $this->authorize('viewAny', Car::class);
+
+        $search = trim((string) $request->query('search', ''));
+        $cars = Car::query()
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('brand', 'like', "%{$search}%")
+                        ->orWhere('model', 'like', "%{$search}%");
+                });
+            })
+            ->orderBy('brand')
+            ->orderBy('model')
             ->get();
 
         return response()->json($cars);
@@ -42,6 +64,8 @@ class carsController extends Controller
 
     public function store(Request $request)
     {
+        $this->authorize('create', Car::class);
+
         $validated = $request->validate([
             'brand' => ['required', 'string', 'max:255'],
             'model' => ['required', 'string', 'max:255'],
@@ -110,4 +134,11 @@ class carsController extends Controller
 
         return redirect()->route('cars.cars_list')->with('success', 'Car deleted successfully.');
     }
+
+    public function show(Car $car)
+{
+    $this->authorize('view', $car);
+
+    return $car;
+}
 }

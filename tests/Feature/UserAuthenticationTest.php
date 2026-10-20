@@ -46,7 +46,7 @@ it('authenticates a user against the bcrypt password in users', function () {
     $this->post(route('login'), [
         'email' => 'user@example.test',
         'password' => 'correct-horse-battery',
-    ])->assertRedirect('/home');
+    ])->assertRedirect(route('dashboard'));
 
     $this->assertAuthenticated();
 });
@@ -89,7 +89,7 @@ it('does not allow public registration to assign an admin role', function () {
         'password' => 'correct-horse-battery',
         'password_confirmation' => 'correct-horse-battery',
         'role' => 'admin',
-    ])->assertRedirect('/home');
+    ])->assertRedirect(route('dashboard'));
 
     expect(User::where('email', 'new-user@example.test')->value('role'))->toBe('user');
 });

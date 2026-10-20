@@ -5,11 +5,40 @@ namespace App\Http\Controllers;
 use App\Models\Bookings;
 use App\Models\Car;
 use App\Models\User;
+use Illuminate\Http\Request;
 
 class dashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $user = $request->user();
+
+        if ($user->role !== 'admin') {
+            $userBookings = $user->bookings()
+                ->with('car')
+                ->latest('start_date')
+                ->latest('id')
+                ->get();
+
+            $nextBooking = $user->bookings()
+                ->with('car')
+                ->whereIn('status', ['pending', 'confirmed'])
+                ->whereDate('start_date', '>=', today())
+                ->orderBy('start_date')
+                ->first();
+
+            $customerMetrics = [
+                'totalBookings' => $userBookings->count(),
+                'activeBookings' => $userBookings->where('status', 'active')->count(),
+                'upcomingBookings' => $userBookings->whereIn('status', ['pending', 'confirmed'])
+                    ->filter(fn (Bookings $booking) => $booking->start_date >= today()->toDateString())
+                    ->count(),
+                'paidTotal' => $userBookings->where('payment_status', 'paid')->sum('total_price'),
+            ];
+
+            return view('customers.dashboard', compact('user', 'userBookings', 'nextBooking', 'customerMetrics'));
+        }
+
         $monthStart = now()->startOfMonth();
         $monthEnd = now()->endOfMonth();
 

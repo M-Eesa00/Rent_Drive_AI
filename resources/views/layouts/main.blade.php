@@ -19,7 +19,7 @@
             class="navbar navbar-expand-lg fw-bolder text-dark fixed-top"
             style="background-color: lightgray">
             <div class="container text-dark">
-                <a class="navbar-brand" href="#">Car Rental</a>
+                <a class="navbar-brand" href="#">Rent Drive_AI</a>
                 <button
                     class="navbar-toggler"
                     type="button"
@@ -33,7 +33,7 @@
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav ms-auto align-items-center">
                         <li class="nav-item">
-                            <a class="nav-link {{ Request::is('dashboard') ? 'active' : '' }}" aria-current="page" href="{{ route('dashboard') }}">Home</a>
+                            <a class="nav-link {{ Request::is('dashboard') ? 'active' : '' }}" aria-current="page" href="{{ route('dashboard') }}">{{ auth()->user()?->role === 'admin' ? 'Home' : 'My Dashboard' }}</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link {{ Request::is('bookings') ? 'active' : '' }}" href="{{ route('show_booking_list') }}">Bookings</a>
@@ -41,12 +41,14 @@
                         <li class="nav-item">
                             <a class="nav-link {{ Request::is('cars') ? 'active' : '' }}" href="{{ route('cars.cars_list') }}">Cars</a>
                         </li>
+                        @if (auth()->user()?->role === 'admin')
                         <li class="nav-item">
                             <a class="nav-link {{ Request::is('customers*') ? 'active' : '' }}" href="{{ route('customers.index') }}">Customers</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link {{ Request::is('users*') ? 'active' : '' }}" href="{{ route('users.index') }}">Users</a>
                         </li>
+                        @endif
 
                         <li class="nav-item dropdown ms-3">
                             <button
@@ -56,19 +58,19 @@
                                 data-bs-toggle="dropdown"
                                 aria-expanded="false"
                                 style="width: 50px; height: 50px; padding: 0">
-                                <span class="fw-bold">More</span>
+                                <span class="fw-bold">{{auth()->user()?->name}}</span>
                             </button>
                             <ul
                                 class="dropdown-menu dropdown-menu-end"
                                 aria-labelledby="profileDropdown">
                                 <li>
-                                    <h6 class="dropdown-header">Instructor</h6>
+                                    <h6 class="dropdown-header">{{ auth()->user()?->role === 'admin' ? 'Administrator' : 'Customer' }}</h6>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item" href="#contact">My Profile</a>
+                                    <a class="dropdown-item" href="{{ route('dashboard') }}">My Dashboard</a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item" href="#dashboard">Dashboard</a>
+                                    <a class="dropdown-item" href="{{ route('show_booking_list') }}">My Bookings</a>
                                 </li>
                                 <li>
                                     <hr class="dropdown-divider" />
@@ -93,18 +95,20 @@
                     <a href="{{ route('dashboard') }}" class="text-decoration-none text-dark fw-semibold">
                         <i class="fa-solid fa-car-side text-primary me-2" aria-hidden="true"></i>Car Rental
                     </a>
-                    <p class="text-secondary small mb-0 mt-1">Car Rental Management System</p>
+                    <p class="text-secondary small mb-0 mt-1">Rent Drive_AI</p>
                 </div>
                 <nav class="col-12 col-md-7" aria-label="Footer navigation">
                     <ul class="nav justify-content-center justify-content-md-end gap-1">
                         <li class="nav-item"><a class="nav-link py-1 px-2 text-secondary" href="{{ route('dashboard') }}">Dashboard</a></li>
                         <li class="nav-item"><a class="nav-link py-1 px-2 text-secondary" href="{{ route('show_booking_list') }}">Bookings</a></li>
                         <li class="nav-item"><a class="nav-link py-1 px-2 text-secondary" href="{{ route('cars.cars_list') }}">Cars</a></li>
+                        @if (auth()->user()?->role === 'admin')
                         <li class="nav-item"><a class="nav-link py-1 px-2 text-secondary" href="{{ route('customers.index') }}">Customers</a></li>
+                        @endif
                     </ul>
                 </nav>
                 <div class="col-12 text-center text-secondary small pt-2 border-top">
-                    &copy; {{ now()->year }} Car Rental Management System. All rights reserved.
+                    &copy; {{ now()->year }} Rent Drive_AI. All rights reserved.
                 </div>
             </div>
         </div>

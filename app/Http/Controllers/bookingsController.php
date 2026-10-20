@@ -8,62 +8,129 @@ use App\Models\Car;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class bookingsController extends Controller
 {
-    public function listBookings()
+    public function listBookings(Request $request)
     {
-        $bookings = Bookings::with(['customer', 'car'])->get();
-        $cars = Car::orderBy('brand')->get();
-        $customers = User::where('role', 'user')->orderBy('name')->get();
+        $this->authorize('viewAny', Bookings::class);
+        $selectedCustomer = null;
 
-        return view("bookings.list", compact('bookings', 'cars', 'customers'));
+        if ($request->user()->role === 'admin' && $request->filled('customer_id')) {
+            $selectedCustomer = User::where('role', 'user')->findOrFail($request->query('customer_id'));
+        }
+
+        $bookingsQuery = Bookings::with(['customer', 'car']);
+        if (auth()->user()->role !== 'admin') {
+            $bookingsQuery->where('customer_id', auth()->id());
+        }
+        $bookings = $bookingsQuery->get();
+        $carsQuery = Car::orderBy('brand');
+        if (auth()->user()->role !== 'admin') {
+            $carsQuery->where('status', 'available');
+        }
+        $cars = $carsQuery->get();
+        $customersQuery = User::where('role', 'user')->orderBy('name');
+        if (auth()->user()->role !== 'admin') {
+            $customersQuery->whereKey(auth()->id());
+        }
+        $customers = $customersQuery->get();
+
+        return view("bookings.list", compact('bookings', 'cars', 'customers', 'selectedCustomer'));
     }
 
     public function edit(Bookings $booking)
     {
-        $cars = Car::orderBy('brand')->get();
-        $customers = User::where('role', 'user')->orderBy('name')->get();
+        $this->authorize('update', $booking);
+
+        $carsQuery = Car::orderBy('brand');
+        if (auth()->user()->role !== 'admin') {
+            $carsQuery->where(function ($query) use ($booking) {
+                $query->where('status', 'available')
+                    ->orWhereKey($booking->car_id);
+            });
+        }
+        $cars = $carsQuery->get();
+        $customersQuery = User::where('role', 'user')->orderBy('name');
+        if (auth()->user()->role !== 'admin') {
+            $customersQuery->whereKey(auth()->id());
+        }
+        $customers = $customersQuery->get();
 
         return view('bookings.edit', compact('booking', 'cars', 'customers'));
     }
 
-    public function index()
+    public function show(Bookings $booking)
     {
-        return response()->json(Bookings::with(['customer', 'car'])->get());
+        $this->authorize('view', $booking);
+
+        $booking->load(['customer', 'car']);
+
+        return view('bookings.show', compact('booking'));
+    }
+
+    public function index(Request $request)
+    {
+        $this->authorize('viewAny', Bookings::class);
+
+        $bookings = Bookings::with(['customer', 'car']);
+        if ($request->user()->role !== 'admin') {
+            $bookings->where('customer_id', $request->user()->id);
+        }
+
+        return response()->json($bookings->get());
     }
 
     public function store(Request $request)
     {
+        $this->authorize('create', Bookings::class);
+
+        $isAdmin = $request->user()->role === 'admin';
         $validated = $request->validate([
-            'car_id' => ['required', 'exists:cars,id'],
-            'customer_name' => ['required', 'string', 'max:255'],
-            'customer_email' => ['required', 'email', 'max:255'],
-            'customer_phone' => ['required', 'string', 'max:30'],
+            'car_id' => [
+                'required',
+                $isAdmin ? 'exists:cars,id' : Rule::exists('cars', 'id')->where('status', 'available'),
+            ],
+            'customer_id' => $isAdmin
+                ? ['nullable', Rule::exists('users', 'id')->where('role', 'user')]
+                : ['prohibited'],
+            'customer_name' => [$isAdmin ? 'required_without:customer_id' : 'nullable', 'string', 'max:255'],
+            'customer_email' => [$isAdmin ? 'required_without:customer_id' : 'nullable', 'email', 'max:255'],
+            'customer_phone' => [$isAdmin ? 'required_without:customer_id' : 'nullable', 'string', 'max:30'],
             'customer_address' => ['nullable', 'string', 'max:500'],
             'start_date' => ['required', 'date', 'after_or_equal:today'],
             'end_date' => ['required', 'date', 'after:start_date'],
         ]);
 
         $car = Car::findOrFail($validated['car_id']);
-        $customer = User::firstOrNew(['email' => $validated['customer_email']]);
-        if ($customer->exists && $customer->getAttribute('role') !== 'user') {
-            throw ValidationException::withMessages([
-                'customer_email' => 'This email is already associated with a non-customer account.',
-            ]);
+        if ($isAdmin) {
+            if (!empty($validated['customer_id'])) {
+                $customer = User::where('role', 'user')->findOrFail($validated['customer_id']);
+            } else {
+                $customer = User::firstOrNew(['email' => $validated['customer_email']]);
+                if ($customer->exists && $customer->getAttribute('role') !== 'user') {
+                    throw ValidationException::withMessages([
+                        'customer_email' => 'This email is already associated with a non-customer account.',
+                    ]);
+                }
+
+                $customerAttributes = [
+                    'name' => $validated['customer_name'],
+                    'phone' => $validated['customer_phone'],
+                    'address' => $validated['customer_address'] ?? null,
+                ];
+                if (!$customer->exists) {
+                    $customerAttributes['password'] = Str::random(64);
+                    $customerAttributes['role'] = 'user';
+                }
+                $customer->fill($customerAttributes)->save();
+            }
+        } else {
+            $customer = $request->user();
         }
 
-        $customerAttributes = [
-            'name' => $validated['customer_name'],
-            'phone' => $validated['customer_phone'],
-            'address' => $validated['customer_address'] ?? null,
-        ];
-        if (!$customer->exists) {
-            $customerAttributes['password'] = Str::random(64);
-            $customerAttributes['role'] = 'user';
-        }
-        $customer->fill($customerAttributes)->save();
         $days = Carbon::parse($validated['start_date'])
             ->diffInDays(Carbon::parse($validated['end_date']));
 
@@ -81,9 +148,21 @@ class bookingsController extends Controller
 
     public function update(Request $request, Bookings $booking)
     {
+        $this->authorize('update', $booking);
+
+        $isAdmin = $request->user()->role === 'admin';
         $validated = $request->validate([
-            'car_id' => ['required', 'exists:cars,id'],
-            'customer_id' => ['required', 'exists:users,id'],
+            'car_id' => [
+                'required',
+                $isAdmin
+                    ? 'exists:cars,id'
+                    : Rule::exists('cars', 'id')->where(fn ($query) => $query
+                        ->where('status', 'available')
+                        ->orWhere('id', $booking->car_id)),
+            ],
+            'customer_id' => $isAdmin
+                ? ['required', Rule::exists('users', 'id')->where('role', 'user')]
+                : ['prohibited'],
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after:start_date'],
             'status' => ['required', 'in:pending,confirmed,active,completed,cancelled'],
@@ -102,6 +181,8 @@ class bookingsController extends Controller
 
     public function destroy(Bookings $booking)
     {
+        $this->authorize('delete', $booking);
+
         $booking->delete();
 
         return redirect()->route('show_booking_list')->with('success', 'Booking deleted successfully.');

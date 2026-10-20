@@ -27,6 +27,7 @@
                             @endforeach
                         </select>
                     </div>
+                    @if (auth()->user()->role === 'admin')
                     <div class="col-md-6">
                         <label for="bookingCustomer" class="form-label">Customer</label>
                         <select id="bookingCustomer" name="customer_id" class="form-select" required>
@@ -35,6 +36,7 @@
                             @endforeach
                         </select>
                     </div>
+                    @endif
                     <div class="col-md-6">
                         <label for="bookingStart" class="form-label">Start date</label>
                         <input type="date" id="bookingStart" name="start_date" class="form-control" value="{{ old('start_date', $booking->start_date) }}" required>

@@ -6,25 +6,27 @@
 
     <div class="col-md-12">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <h3 class="text-dark mb-0">Cars Table</h3>
+            <div>
+                <h1 class="h2 text-dark mb-1">{{ $isAdmin ? 'Fleet inventory' : 'Available cars' }}</h1>
+                <p class="text-muted mb-0">{{ $isAdmin ? 'Manage and search the full vehicle inventory.' : 'Browse and search vehicles currently available to rent.' }}</p>
+            </div>
+            @if ($isAdmin)
             <div class="d-flex flex-wrap gap-2">
                 <button type="button" id="addCarButton" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCarModal">
                     <i class="fa-solid fa-plus me-1"></i> Add New Car
                 </button>
             </div>
+            @endif
         </div>
 
-        <!-- FILTER SEARCH -->
-
+        @if ($isAdmin)
         <div class="row">
             <form id="cars-filter-form" class="col-md-6 d-flex gap-2 mb-4">
-                <input type="text" id="search-bar" placeholder="Search by brand or model..." class="form-control">
-                <button type="submit" class="btn btn-primary">Filter</button>
+                <input type="search" id="search-bar" placeholder="Search all cars by brand or model..." class="form-control" aria-label="Search all cars by brand or model">
+                <button type="submit" class="btn btn-primary">Search</button>
                 <button type="reset" class="btn btn-outline-secondary">Reset</button>
             </form>
         </div>
-
-
 
         <div class="table-responsive">
             <table class="table table-hover mt-4">
@@ -39,13 +41,22 @@
                         <th class="text-center">Actions</th>
                     </tr>
                 </thead>
-                <tbody id="cars-table-body" data-storage-url="{{ asset('storage') }}" data-csrf-token="{{ csrf_token() }}">
+                <tbody id="cars-table-body" data-storage-url="{{ asset('storage') }}" data-csrf-token="{{ csrf_token() }}" data-inventory-url="{{ route('cars.inventory') }}">
                     <tr>
-                        <td colspan="6" class="text-center text-muted py-4">Loading cars...</td>
+                        <td colspan="7" class="text-center text-muted py-4">Loading cars...</td>
                     </tr>
                 </tbody>
             </table>
         </div>
+        @else
+        <div class="row mt-4">
+            <form id="available-cars-filter-form" class="col-12 col-md-8 col-lg-6 d-flex gap-2">
+                <input type="search" id="available-cars-search" placeholder="Search available cars by brand or model..." class="form-control" aria-label="Search available cars by brand or model">
+                <button type="submit" class="btn btn-primary">Search</button>
+                <button type="reset" class="btn btn-outline-secondary">Reset</button>
+            </form>
+        </div>
+        @endif
 
         @if (session('success'))
         <div class="alert alert-success alert-dismissible fade show mt-4" role="alert">
@@ -72,15 +83,20 @@
         </div>
         @endif
 
-        <h3 class="mb-3 text-center mt-5 mb-2">Available Cars Showcase</h3>
-        <div class="row loadAvailableCars " data-storage-url="{{ asset('storage') }}">
+        @if ($isAdmin)
+        <h2 class="h4 mb-3 text-center mt-5">Available cars showcase</h2>
+        @endif
+        <div class="row loadAvailableCars mt-3" data-storage-url="{{ asset('storage') }}">
+            <div class="col-12 text-center text-muted py-4">Loading available cars...</div>
         </div>
     </div>
 
 </main>
 
 
+@if ($isAdmin)
 @include('cars.add_car_modal')
+@endif
 
 @endsection
 
@@ -133,13 +149,13 @@
             const query = new URLSearchParams(params).toString();
 
             $.ajax({
-                url: '/api/cars' + (query ? `?${query}` : ''),
+                url: `${carsTableBody.data('inventory-url')}${query ? `?${query}` : ''}`,
                 method: 'GET',
                 success: function(cars) {
                     carsTableBody.empty();
 
                     if (cars.length === 0) {
-                        carsTableBody.append('<tr><td colspan="6" class="text-center text-muted py-4">No cars found.</td></tr>');
+                        carsTableBody.append('<tr><td colspan="7" class="text-center text-muted py-4">No cars found.</td></tr>');
                         return;
                     }
 
@@ -177,92 +193,83 @@
                 },
                 error: function(xhr, status, error) {
                     console.error('Error fetching cars:', error);
-                    carsTableBody.html('<tr><td colspan="6" class="text-center text-danger py-4">Unable to load cars. Please refresh and try again.</td></tr>');
+                    carsTableBody.html('<tr><td colspan="7" class="text-center text-danger py-4">Unable to load cars. Please refresh and try again.</td></tr>');
                 }
             });
         }
 
-        fetchCars({});
+        if (carsTableBody.length) {
+            fetchCars({});
+        }
 
-        //CARS TABLE
+        $('#available-cars-filter-form').on('submit', function(event) {
+            event.preventDefault();
+            loadAvailableCars($('#available-cars-search').val().trim());
+        });
 
-        //CARS CARDS
+        $('#available-cars-filter-form').on('reset', function() {
+            window.setTimeout(() => loadAvailableCars(), 0);
+        });
 
-        function loadAvailableCars() {
-            let loadAvailables = document.querySelector(".loadAvailableCars");
+        function loadAvailableCars(search = '') {
+            const loadAvailables = document.querySelector('.loadAvailableCars');
             let availableHTML = "";
             const storageUrl = loadAvailables.dataset.storageUrl;
+            const query = new URLSearchParams(search ? { search } : {}).toString();
 
             $.ajax({
                 method: "GET",
-                url: '/api/cars',
+                url: '/api/cars' + (query ? `?${query}` : ''),
                 success: function(carss) {
+                    if (carss.length === 0) {
+                        loadAvailables.innerHTML = '<div class="col-12 text-center text-muted py-5">No available cars match your search.</div>';
+                        return;
+                    }
+
                     carss.forEach((car) => {
                         const imagePath = car.image ? car.image.split('/').map(encodeURIComponent).join('/') : "";
                         const imageCell = imagePath ?
-                            `<img src="${storageUrl}/${imagePath}" alt="${car.brand || "Car"} ${car.model || ""}" class="card-img-top img-fluid" style="height: 180px; object-fit: cover;">` :
+                            `<img src="${escapeHtml(`${storageUrl}/${imagePath}`)}" alt="${escapeHtml(`${car.brand || "Car"} ${car.model || ""}`)}" class="card-img-top img-fluid" style="height: 180px; object-fit: cover;">` :
                             `<div class="d-flex align-items-center justify-content-center bg-light text-muted" style="height: 180px;">No photo</div>`;
+                        const carName = `${car.brand ?? ''} ${car.model ?? ''}`.trim();
+                        const bookingAction = @json(auth()->check())
+                            ? `<button type="button" class="btn btn-primary w-100 rounded-3 fw-semibold car-book-btn" data-bs-toggle="modal" data-bs-target="#bookingModal" data-car-id="${escapeHtml(car.id)}" data-car-name="${escapeHtml(carName)}" data-daily-rate="${escapeHtml(car.daily_rate)}">Book Now</button>`
+                            : `<a href="{{ route('login') }}" class="btn btn-outline-primary w-100 rounded-3 fw-semibold">Sign in to book</a>`;
 
-                        if ((car.status || "").toLowerCase() === "available") {
-                            availableHTML += `
+                        availableHTML += `
                             <div class="col-md-6 col-lg-3 mb-3 mt-2"> 
                             <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden my-1">
-                                
-                                <!-- Upper Row: Car Image -->
                                 ${imageCell}
-                                
-                                <!-- Lower Row: Details -->
                                 <div class="card-body d-flex flex-column">
-                                
-                                <!-- Title and Price Row -->
                                 <div class="d-flex justify-content-between align-items-start mb-1">
                                     <div>
-                                    <h5 class="card-title fw-bold mb-0 text-dark">${car.brand ?? ""}</h5>
-                                    <p class="text-muted small mb-2">${car.model ?? ""}</p>
+                                    <h3 class="h5 card-title fw-bold mb-0 text-dark">${escapeHtml(car.brand)}</h3>
+                                    <p class="text-muted small mb-2">${escapeHtml(car.model)}</p>
                                     </div>
                                     <div class="text-end">
-                                    <span class="fs-5 fw-bold text-primary">Rs ${car.daily_rate ?? ""}</span>
+                                    <span class="fs-5 fw-bold text-primary">Rs ${escapeHtml(car.daily_rate)}</span>
                                     <div class="text-muted" style="font-size: 0.7rem;">per day</div>
                                     </div>
                                 </div>
-                                
-                                <!-- Specs Row -->
                                 <div class="d-flex align-items-center gap-3 text-muted small mb-3">
-                                    <div><i class="bi bi-person text-secondary"></i> ${car.seats ?? ""} seats</div>
-                                    <div><i class="fa-solid fa-gear"></i> ${car.gear_type ?? ""}</div>
-                                    <div><i class="fa-solid fa-gas-pump"></i> ${car.fuel_type ?? ""}</div>
+                                    <div><i class="bi bi-person text-secondary"></i> ${escapeHtml(car.seats)} seats</div>
+                                    <div><i class="fa-solid fa-gear"></i> ${escapeHtml(car.gear_type)}</div>
+                                    <div><i class="fa-solid fa-gas-pump"></i> ${escapeHtml(car.fuel_type)}</div>
                                 </div>
-                                
-                                <!-- Feature Badges -->
-                                <div class="d-flex flex-wrap gap-1 mb-3">
-                                
-                                </div>
-                                
-                                <!-- Book Now Button -->
-                                <button type="button"
-                                    class="btn btn-primary w-100 rounded-3 fw-semibold car-book-btn"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#bookingModal"
-                                    data-car-id="${car.id}"
-                                    data-car-name="${car.brand ?? ""} ${car.model ?? ""}"
-                                    data-daily-rate="${car.daily_rate ?? 0}">
-                                    Book Now
-                                </button>
-                                
+                                <div class="mt-auto">${bookingAction}</div>
                                 </div>
                             </div>
                             </div>`;
-                        }
                     });
 
                     loadAvailables.innerHTML = availableHTML;
                 },
                 error: function(xhr, status, error) {
                     console.error("Failed to fetch cars:", error);
+                    loadAvailables.innerHTML = '<div class="col-12 text-center text-danger py-4">Unable to load available cars. Please refresh and try again.</div>';
                 },
             });
         }
-        ///////
 
         loadAvailableCars();
     });
@@ -270,6 +277,7 @@
 
 @endsection
 
+@if (auth()->check())
 <div class="modal fade" id="bookingModal" tabindex="-1" aria-labelledby="bookingModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -283,6 +291,7 @@
                     <p class="mb-3">Selected vehicle: <strong id="bookingCarName"></strong></p>
                     <input type="hidden" name="car_id" id="bookingCarId">
 
+                    @if ($isAdmin)
                     <div class="mb-3">
                         <label for="customerName" class="form-label">Full name</label>
                         <input type="text" class="form-control" name="customer_name" id="customerName" required>
@@ -299,10 +308,11 @@
                         <label for="customerAddress" class="form-label">Address</label>
                         <textarea class="form-control" name="customer_address" id="customerAddress" rows="2"></textarea>
                     </div>
+                    @endif
 
                     <div class="mb-3">
                         <label for="bookingStartDate" class="form-label">Pick-up date</label>
-                        <input type="date" class="form-control" name="start_date" id="bookingStartDate" required>
+                        <input type="date" class="form-control" name="start_date" id="bookingStartDate" min="{{ now()->toDateString() }}" required>
                     </div>
                     <div class="mb-3">
                         <label for="bookingEndDate" class="form-label">Return date</label>
@@ -318,6 +328,7 @@
         </div>
     </div>
 </div>
+@endif
 
 <script>
     $(document).on('click', '.car-book-btn', function() {

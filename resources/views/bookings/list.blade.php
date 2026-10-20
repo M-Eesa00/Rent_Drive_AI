@@ -51,6 +51,7 @@
                     <td>{{ ucfirst($booking->status) }}</td>
                     <td>{{ ucfirst($booking->payment_status) }}</td>
                     <td class="text-end text-nowrap">
+                        <a href="{{ route('bookings.show', $booking) }}" class="btn btn-sm btn-outline-secondary">Details</a>
                         <a href="{{ route('bookings.edit', $booking) }}" class="btn btn-sm btn-outline-primary">Edit</a>
                         <form action="{{ route('bookings.destroy', $booking) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this booking?')">
                             @csrf
@@ -69,7 +70,7 @@
     </div>
 </main>
 
-<div class="modal fade" id="addBookingModal" data-open-on-error="{{ old('_form') === 'booking' ? 'true' : 'false' }}" tabindex="-1" aria-labelledby="addBookingModalLabel" aria-hidden="true">
+<div class="modal fade" id="addBookingModal" data-open-on-error="{{ old('_form') === 'booking' || $selectedCustomer ? 'true' : 'false' }}" tabindex="-1" aria-labelledby="addBookingModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
@@ -81,6 +82,13 @@
                 <input type="hidden" name="_form" value="booking">
                 <div class="modal-body">
                     <div class="row g-3">
+                        @if (auth()->user()->role === 'admin' && $selectedCustomer)
+                        <input type="hidden" name="customer_id" value="{{ $selectedCustomer->id }}">
+                        <div class="col-12">
+                            <label class="form-label">Customer</label>
+                            <div class="form-control bg-light">{{ $selectedCustomer->name }} <span class="text-muted">({{ $selectedCustomer->email }})</span></div>
+                        </div>
+                        @endif
                         <div class="col-12">
                             <label for="bookingCarId" class="form-label">Car</label>
                             <select id="bookingCarId" name="car_id" class="form-select" required>
@@ -90,22 +98,24 @@
                                 @endforeach
                             </select>
                         </div>
+                        @if (auth()->user()->role === 'admin')
                         <div class="col-md-6">
                             <label for="bookingCustomerName" class="form-label">Customer name</label>
-                            <input type="text" class="form-control" id="bookingCustomerName" name="customer_name" value="{{ old('customer_name') }}" required>
+                            <input type="text" class="form-control" id="bookingCustomerName" name="customer_name" value="{{ old('customer_name', $selectedCustomer?->name) }}" @required(!$selectedCustomer)>
                         </div>
                         <div class="col-md-6">
                             <label for="bookingCustomerEmail" class="form-label">Customer email</label>
-                            <input type="email" class="form-control" id="bookingCustomerEmail" name="customer_email" value="{{ old('customer_email') }}" required>
+                            <input type="email" class="form-control" id="bookingCustomerEmail" name="customer_email" value="{{ old('customer_email', $selectedCustomer?->email) }}" @required(!$selectedCustomer)>
                         </div>
                         <div class="col-md-6">
                             <label for="bookingCustomerPhone" class="form-label">Phone</label>
-                            <input type="tel" class="form-control" id="bookingCustomerPhone" name="customer_phone" value="{{ old('customer_phone') }}" required>
+                            <input type="tel" class="form-control" id="bookingCustomerPhone" name="customer_phone" value="{{ old('customer_phone', $selectedCustomer?->phone) }}" @required(!$selectedCustomer)>
                         </div>
                         <div class="col-md-6">
                             <label for="bookingCustomerAddress" class="form-label">Address</label>
-                            <input type="text" class="form-control" id="bookingCustomerAddress" name="customer_address" value="{{ old('customer_address') }}">
+                            <input type="text" class="form-control" id="bookingCustomerAddress" name="customer_address" value="{{ old('customer_address', $selectedCustomer?->address) }}">
                         </div>
+                        @endif
                         <div class="col-md-6">
                             <label for="bookingStartDate" class="form-label">Start date</label>
                             <input type="date" class="form-control" id="bookingStartDate" name="start_date" min="{{ now()->toDateString() }}" value="{{ old('start_date') }}" required>

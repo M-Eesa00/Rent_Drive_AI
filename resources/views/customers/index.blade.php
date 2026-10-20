@@ -64,11 +64,19 @@
                     <td class="text-center">{{ $customer->bookings->count() }}</td>
                     <td>{{ $customer->created_at?->format('M j, Y') }}</td>
                     <td class="text-end text-nowrap">
-                        <a href="{{ route('customers.edit', $customer) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                        <a href="{{ route('show_booking_list', ['customer_id' => $customer->id]) }}" class="btn btn-sm btn-outline-success" title="Add booking for {{ $customer->name }}">
+                            <i class="fa-solid fa-calendar-plus me-1" aria-hidden="true"></i> Add booking
+                        </a>
+                        <a href="{{ route('customers.show', $customer) }}" class="btn btn-sm " title="View bookings">
+                            <i class="fa-solid fa-eye"></i>
+                        </a>
+                        <a href="{{ route('customers.edit', $customer) }}" class="btn btn-sm"><i class="fa-regular fa-pen-to-square"></i></a>
                         <form action="{{ route('customers.destroy', $customer) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this customer? Customers with booking history cannot be deleted.')">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                            <button type="submit" class="btn btn-sm btn-danger" title="Delete customer">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
                         </form>
                     </td>
                 </tr>
