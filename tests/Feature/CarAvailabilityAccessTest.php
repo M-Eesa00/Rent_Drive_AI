@@ -128,4 +128,46 @@ it('allows a customer to book an available car', function () {
         ->assertRedirect(route('show_booking_list'));
 
     expect(Bookings::where('customer_id', $customer->id)->count())->toBe(1);
+    expect($car->fresh()->status)->toBe('rented');
+});
+
+it('returns a car to available when its booking is completed or cancelled', function () {
+    $admin = User::create([
+        'name' => 'Admin',
+        'email' => 'admin-booking-status@example.test',
+        'password' => 'password',
+        'role' => 'admin',
+    ]);
+    $customer = User::create([
+        'name' => 'Customer',
+        'email' => 'customer-booking-status@example.test',
+        'password' => 'password',
+        'role' => 'user',
+    ]);
+
+    foreach (['completed', 'cancelled'] as $status) {
+        $car = createCarForAvailabilityTest('Lifecycle', 'Car', "LIFECYCLE-{$status}", 'rented');
+        $booking = Bookings::create([
+            'car_id' => $car->id,
+            'customer_id' => $customer->id,
+            'start_date' => now()->addDays(2)->toDateString(),
+            'end_date' => now()->addDays(4)->toDateString(),
+            'total_price' => 200,
+            'status' => 'confirmed',
+            'payment_status' => 'unpaid',
+        ]);
+
+        $this->actingAs($admin)
+            ->put(route('bookings.update', $booking), [
+                'car_id' => $car->id,
+                'customer_id' => $customer->id,
+                'start_date' => now()->addDays(2)->toDateString(),
+                'end_date' => now()->addDays(4)->toDateString(),
+                'status' => $status,
+                'payment_status' => 'unpaid',
+            ])
+            ->assertRedirect(route('show_booking_list'));
+
+        expect($car->fresh()->status)->toBe('available');
+    }
 });

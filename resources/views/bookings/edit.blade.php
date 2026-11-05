@@ -23,7 +23,9 @@
                         <label for="bookingCar" class="form-label">Car</label>
                         <select id="bookingCar" name="car_id" class="form-select" required>
                             @foreach ($cars as $car)
+                            @if ($car->status === 'available')
                             <option value="{{ $car->id }}" @selected((string) old('car_id', $booking->car_id) === (string) $car->id)>{{ $car->brand }} {{ $car->model }} ({{ $car->plate_number }})</option>
+                            @endif
                             @endforeach
                         </select>
                     </div>

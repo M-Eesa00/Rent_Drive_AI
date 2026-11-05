@@ -12,7 +12,7 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-    Route::get('cars', carsController::class . '@carsList')->name('cars.cars_list');
+Route::get('cars', carsController::class . '@carsList')->name('cars.cars_list');
 
 
 
@@ -31,6 +31,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('bookings/{booking}/edit', [bookingsController::class, 'edit'])->name('bookings.edit');
     Route::put('bookings/{booking}', [bookingsController::class, 'update'])->name('bookings.update');
     Route::delete('bookings/{booking}', [bookingsController::class, 'destroy'])->name('bookings.destroy');
+    Route::get('customers/export', [CustomerController::class, 'export'])->name('customers.export')->middleware('admin-only');
     Route::get('customers', [CustomerController::class, 'index'])->name('customers.index')->middleware('admin-only');
     Route::get('customers/create', [CustomerController::class, 'create'])->name('customers.create')->middleware('admin-only');
     Route::get('customers/{customer}/edit', [CustomerController::class, 'edit'])->name('customers.edit')->middleware('admin-only');

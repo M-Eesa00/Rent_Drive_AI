@@ -7,6 +7,9 @@
             <h1 class="h2 mb-1">Customers</h1>
             <p class="text-muted mb-0">{{ $customers->count() }} customers</p>
         </div>
+        <a type="button" href="{{ route('customers.export') }}" class="btn btn-success">
+            Export to Excel
+        </a>
         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCustomerModal">
             <i class="fa-solid fa-user-plus me-1"></i> Add Customer
         </button>

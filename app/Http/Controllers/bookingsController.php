@@ -10,9 +10,12 @@ use Carbon\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\DB;
 
 class bookingsController extends Controller
 {
+    private const OPEN_BOOKING_STATUSES = ['pending', 'confirmed', 'active'];
+
     public function listBookings(Request $request)
     {
         $this->authorize('viewAny', Bookings::class);
@@ -104,43 +107,47 @@ class bookingsController extends Controller
             'end_date' => ['required', 'date', 'after:start_date'],
         ]);
 
-        $car = Car::findOrFail($validated['car_id']);
-        if ($isAdmin) {
-            if (!empty($validated['customer_id'])) {
-                $customer = User::where('role', 'user')->findOrFail($validated['customer_id']);
+        DB::transaction(function () use ($validated, $isAdmin, $request) {
+            $car = Car::whereKey($validated['car_id'])->lockForUpdate()->firstOrFail();
+            if ($isAdmin) {
+                if (!empty($validated['customer_id'])) {
+                    $customer = User::where('role', 'user')->findOrFail($validated['customer_id']);
+                } else {
+                    $customer = User::firstOrNew(['email' => $validated['customer_email']]);
+                    if ($customer->exists && $customer->getAttribute('role') !== 'user') {
+                        throw ValidationException::withMessages([
+                            'customer_email' => 'This email is already associated with a non-customer account.',
+                        ]);
+                    }
+
+                    $customerAttributes = [
+                        'name' => $validated['customer_name'],
+                        'phone' => $validated['customer_phone'],
+                        'address' => $validated['customer_address'] ?? null,
+                    ];
+                    if (!$customer->exists) {
+                        $customerAttributes['password'] = Str::random(64);
+                        $customerAttributes['role'] = 'user';
+                    }
+                    $customer->fill($customerAttributes)->save();
+                }
             } else {
-                $customer = User::firstOrNew(['email' => $validated['customer_email']]);
-                if ($customer->exists && $customer->getAttribute('role') !== 'user') {
-                    throw ValidationException::withMessages([
-                        'customer_email' => 'This email is already associated with a non-customer account.',
-                    ]);
-                }
-
-                $customerAttributes = [
-                    'name' => $validated['customer_name'],
-                    'phone' => $validated['customer_phone'],
-                    'address' => $validated['customer_address'] ?? null,
-                ];
-                if (!$customer->exists) {
-                    $customerAttributes['password'] = Str::random(64);
-                    $customerAttributes['role'] = 'user';
-                }
-                $customer->fill($customerAttributes)->save();
+                $customer = $request->user();
             }
-        } else {
-            $customer = $request->user();
-        }
 
-        $days = Carbon::parse($validated['start_date'])
-            ->diffInDays(Carbon::parse($validated['end_date']));
+            $days = Carbon::parse($validated['start_date'])
+                ->diffInDays(Carbon::parse($validated['end_date']));
 
-        Bookings::create([
-            'car_id' => $car->id,
-            'customer_id' => $customer->id,
-            'start_date' => $validated['start_date'],
-            'end_date' => $validated['end_date'],
-            'total_price' => $days * $car->daily_rate,
-        ]);
+            Bookings::create([
+                'car_id' => $car->id,
+                'customer_id' => $customer->id,
+                'start_date' => $validated['start_date'],
+                'end_date' => $validated['end_date'],
+                'total_price' => $days * $car->daily_rate,
+            ]);
+
+            $this->syncCarAvailability($car->id);
+        });
 
         return redirect()->route('show_booking_list')
             ->with('success', 'Booking created successfully.');
@@ -169,12 +176,19 @@ class bookingsController extends Controller
             'payment_status' => ['required', 'in:unpaid,paid,refunded'],
         ]);
 
-        $car = Car::findOrFail($validated['car_id']);
-        $days = Carbon::parse($validated['start_date'])
-            ->diffInDays(Carbon::parse($validated['end_date']));
-        $validated['total_price'] = $days * $car->daily_rate;
+        DB::transaction(function () use ($booking, $validated) {
+            $booking = Bookings::whereKey($booking->getKey())->lockForUpdate()->firstOrFail();
+            $previousCarId = $booking->car_id;
+            $car = Car::whereKey($validated['car_id'])->lockForUpdate()->firstOrFail();
+            $days = Carbon::parse($validated['start_date'])
+                ->diffInDays(Carbon::parse($validated['end_date']));
+            $validated['total_price'] = $days * $car->daily_rate;
 
-        $booking->update($validated);
+            $booking->update($validated);
+
+            $this->syncCarAvailability($previousCarId);
+            $this->syncCarAvailability($car->id);
+        });
 
         return redirect()->route('show_booking_list')->with('success', 'Booking updated successfully.');
     }
@@ -183,8 +197,24 @@ class bookingsController extends Controller
     {
         $this->authorize('delete', $booking);
 
-        $booking->delete();
+        DB::transaction(function () use ($booking) {
+            $booking = Bookings::whereKey($booking->getKey())->lockForUpdate()->firstOrFail();
+            $carId = $booking->car_id;
+            $booking->delete();
+
+            $this->syncCarAvailability($carId);
+        });
 
         return redirect()->route('show_booking_list')->with('success', 'Booking deleted successfully.');
+    }
+
+    private function syncCarAvailability(int $carId): void
+    {
+        $car = Car::findOrFail($carId);
+        $hasOpenBooking = $car->bookings()
+            ->whereIn('status', self::OPEN_BOOKING_STATUSES)
+            ->exists();
+
+        $car->update(['status' => $hasOpenBooking ? 'rented' : 'available']);
     }
 }

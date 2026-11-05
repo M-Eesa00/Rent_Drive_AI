@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Spatie\SimpleExcel\SimpleExcelReader;
+use Spatie\SimpleExcel\SimpleExcelWriter;
 
 class CustomerController extends Controller
 {
@@ -26,7 +28,7 @@ class CustomerController extends Controller
         abort_unless($customer->getAttribute('role') === 'user', 404);
 
         $customer->load([
-            'bookings' => fn ($query) => $query->with('car')->latest('start_date')->latest('id'),
+            'bookings' => fn($query) => $query->with('car')->latest('start_date')->latest('id'),
         ]);
 
         return view('customers.show', compact('customer'));
@@ -117,5 +119,31 @@ class CustomerController extends Controller
         $customer->delete();
 
         return redirect()->route('customers.index')->with('success', 'Customer deleted successfully.');
+    }
+
+    public function export()
+    {
+        $filepath = storage_path('app/public/users.xlsx');
+
+        $writer = SimpleExcelWriter::create($filepath);
+
+        User::where('role', 'user')
+            ->orderBy('name', 'asc')
+            ->chunk(1000, function ($users) use ($writer) {
+                foreach ($users as $user) {
+                    $name = trim(preg_replace('/\s+/', ' ', $user->name));
+                    $name_parts = explode(' ', $name, 2);
+                    $first_name = $name_parts[0] ?? '';
+                    $last_name = $name_parts[1] ?? '';
+
+                    $writer->addRow([
+                        'first_name' => $first_name,
+                        'last_name' => $last_name,
+                        'email' => $user->email,
+                    ]);
+                }
+            });
+
+        return response()->download($filepath, 'users.xlsx')->deleteFileAfterSend(true);
     }
 }

@@ -94,7 +94,9 @@
                             <select id="bookingCarId" name="car_id" class="form-select" required>
                                 <option value="" disabled selected>Select a car</option>
                                 @foreach ($cars as $car)
+                                @if ($car->status === 'available')
                                 <option value="{{ $car->id }}">{{ $car->brand }} {{ $car->model }} ({{ $car->plate_number }})</option>
+                                @endif
                                 @endforeach
                             </select>
                         </div>
