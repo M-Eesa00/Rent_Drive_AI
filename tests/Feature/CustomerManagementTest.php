@@ -214,7 +214,7 @@ it('lets admins start a booking for a customer and assigns the booking to that c
         ->assertOk()
         ->assertSee('Selected Customer')
         ->assertSee('data-open-on-error="true"', false)
-        ->assertSee('name="customer_id" value="' . $customer->id . '"', false);
+        ->assertSee('name="customer_id" value="'.$customer->id.'"', false);
 
     $this->post(route('bookings.store'), [
         'car_id' => $car->id,
@@ -227,7 +227,7 @@ it('lets admins start a booking for a customer and assigns the booking to that c
         ->and($customer->fresh()->name)->toBe('Selected Customer');
 });
 
-it('does not allow customers to submit an admin-selected customer id when booking', function () {
+it('does not allow customers to bypass the multi-step booking flow with an admin-selected customer id', function () {
     $customer = User::create([
         'name' => 'Regular Customer',
         'email' => 'regular-booking-customer@example.test',
@@ -261,8 +261,7 @@ it('does not allow customers to submit an admin-selected customer id when bookin
             'start_date' => now()->addDays(2)->toDateString(),
             'end_date' => now()->addDays(4)->toDateString(),
         ])
-        ->assertRedirect(route('cars.cars_list'))
-        ->assertSessionHasErrors('customer_id');
+        ->assertForbidden();
 
     expect(Bookings::count())->toBe(0);
 });

@@ -47,10 +47,11 @@
                         <label for="bookingEnd" class="form-label">End date</label>
                         <input type="date" id="bookingEnd" name="end_date" class="form-control" value="{{ old('end_date', $booking->end_date) }}" required>
                     </div>
+                    @if (auth()->user()->role === 'admin')
                     <div class="col-md-6">
                         <label for="bookingStatus" class="form-label">Booking status</label>
                         <select id="bookingStatus" name="status" class="form-select" required>
-                            @foreach (['pending', 'confirmed', 'active', 'completed', 'cancelled'] as $status)
+                            @foreach (['pending', 'confirmed', 'active', 'cancelled'] as $status)
                             <option value="{{ $status }}" @selected(old('status', $booking->status) === $status)>{{ ucfirst($status) }}</option>
                             @endforeach
                         </select>
@@ -63,6 +64,7 @@
                             @endforeach
                         </select>
                     </div>
+                    @endif
                 </div>
                 <div class="mt-4 d-flex justify-content-end gap-2">
                     <a href="{{ route('show_booking_list') }}" class="btn btn-outline-secondary">Cancel</a>

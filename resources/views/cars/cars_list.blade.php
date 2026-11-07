@@ -10,6 +10,11 @@
                 <h1 class="h2 text-dark mb-1">{{ $isAdmin ? 'Fleet inventory' : 'Available cars' }}</h1>
                 <p class="text-muted mb-0">{{ $isAdmin ? 'Manage and search the full vehicle inventory.' : 'Browse and search vehicles currently available to rent.' }}</p>
             </div>
+            @unless ($isAdmin)
+            <a href="{{ route('booking.create') }}" class="btn btn-primary">
+                <i class="fa-solid fa-calendar-plus me-1" aria-hidden="true"></i> Start a booking
+            </a>
+            @endunless
             @if ($isAdmin)
             <div class="d-flex flex-wrap gap-2">
                 <button type="button" id="addCarButton" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCarModal">
@@ -231,10 +236,7 @@
                         const imageCell = imagePath ?
                             `<img src="${escapeHtml(`${storageUrl}/${imagePath}`)}" alt="${escapeHtml(`${car.brand || "Car"} ${car.model || ""}`)}" class="card-img-top img-fluid" style="height: 180px; object-fit: cover;">` :
                             `<div class="d-flex align-items-center justify-content-center bg-light text-muted" style="height: 180px;">No photo</div>`;
-                        const carName = `${car.brand ?? ''} ${car.model ?? ''}`.trim();
-                        const bookingAction = @json(auth()->check())
-                            ? `<button type="button" class="btn btn-primary w-100 rounded-3 fw-semibold car-book-btn" data-bs-toggle="modal" data-bs-target="#bookingModal" data-car-id="${escapeHtml(car.id)}" data-car-name="${escapeHtml(carName)}" data-daily-rate="${escapeHtml(car.daily_rate)}">Book Now</button>`
-                            : `<a href="{{ route('login') }}" class="btn btn-outline-primary w-100 rounded-3 fw-semibold">Sign in to book</a>`;
+                        const bookingAction = `<a href="{{ route('booking.create') }}" class="btn btn-primary w-100 rounded-3 fw-semibold">Book this car</a>`;
 
                         availableHTML += `
                             <div class="col-md-6 col-lg-3 mb-3 mt-2"> 
@@ -277,66 +279,7 @@
 
 @endsection
 
-@if (auth()->check())
-<div class="modal fade" id="bookingModal" tabindex="-1" aria-labelledby="bookingModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="bookingModalLabel">Book a car</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form action="{{ route('bookings.store') }}" method="POST">
-                @csrf
-                <div class="modal-body">
-                    <p class="mb-3">Selected vehicle: <strong id="bookingCarName"></strong></p>
-                    <input type="hidden" name="car_id" id="bookingCarId">
-
-                    @if ($isAdmin)
-                    <div class="mb-3">
-                        <label for="customerName" class="form-label">Full name</label>
-                        <input type="text" class="form-control" name="customer_name" id="customerName" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="customerEmail" class="form-label">Email address</label>
-                        <input type="email" class="form-control" name="customer_email" id="customerEmail" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="customerPhone" class="form-label">Phone number</label>
-                        <input type="tel" class="form-control" name="customer_phone" id="customerPhone" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="customerAddress" class="form-label">Address</label>
-                        <textarea class="form-control" name="customer_address" id="customerAddress" rows="2"></textarea>
-                    </div>
-                    @endif
-
-                    <div class="mb-3">
-                        <label for="bookingStartDate" class="form-label">Pick-up date</label>
-                        <input type="date" class="form-control" name="start_date" id="bookingStartDate" min="{{ now()->toDateString() }}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="bookingEndDate" class="form-label">Return date</label>
-                        <input type="date" class="form-control" name="end_date" id="bookingEndDate" required>
-                    </div>
-                    <div class="text-muted small">Daily rate: Rs<span id="bookingDailyRate"></span></div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Confirm Booking</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-@endif
-
 <script>
-    $(document).on('click', '.car-book-btn', function() {
-        $('#bookingCarId').val($(this).data('car-id'));
-        $('#bookingCarName').text($(this).data('car-name'));
-        $('#bookingDailyRate').text($(this).data('daily-rate'));
-    });
-
     //ALERTS TIMEOUT 
     document.querySelectorAll('.alert').forEach((alertElement) => {
         setTimeout(() => {

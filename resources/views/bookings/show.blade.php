@@ -14,7 +14,7 @@
                 <i class="fa-solid fa-arrow-left me-1" aria-hidden="true"></i> Back to bookings
             </a>
             <h1 class="h2 fw-bold mt-2 mb-1">Booking details</h1>
-            <p class="text-muted mb-0">Reference #{{ $booking->id }} · Created {{ $booking->created_at?->format('M j, Y') ?? '—' }}</p>
+            <p class="text-muted mb-0">Reference {{ $booking->reference ?: '#'.$booking->id }} · Created {{ $booking->created_at?->format('M j, Y') ?? '—' }}</p>
         </div>
         <div class="d-flex gap-2">
             <a href="{{ route('bookings.edit', $booking) }}" class="btn btn-outline-primary">
@@ -101,6 +101,16 @@
                     </div>
                 </div>
             </section>
+
+            @if ($booking->special_requests)
+            <section class="card border-0 shadow-sm mb-4" aria-labelledby="specialRequestsHeading">
+                <div class="card-body p-4">
+                    <p class="small text-uppercase text-muted fw-semibold mb-1">Customer note</p>
+                    <h2 class="h5 fw-bold mb-3" id="specialRequestsHeading">Special requests</h2>
+                    <p class="mb-0">{{ $booking->special_requests }}</p>
+                </div>
+            </section>
+            @endif
 
             <section class="card border-0 shadow-sm mb-4" aria-labelledby="priceSummaryHeading">
                 <div class="card-body p-4">

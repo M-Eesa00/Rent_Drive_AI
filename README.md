@@ -7,6 +7,30 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+## Customer booking flow
+
+Customers can start a guest-capable, step-by-step booking at `/booking` (the homepage **Book a Car** button opens this flow directly). They enter pickup/return dates, search vehicles for those dates, select a car, enter contact details and special requests, review the total, and submit a booking request. The request is saved as pending admin approval. Admins approve requests from the Bookings list; registered customers receive an approval email, and guests do not receive customer emails. A request notification is sent to the configured admin email.
+
+Run the database migrations before enabling the flow:
+
+```sh
+php artisan migrate
+```
+
+Configure the booking notification recipient and a delivery mailer in `.env`:
+
+```dotenv
+BOOKING_ADMIN_EMAIL=admin@example.com
+MAIL_MAILER=smtp
+MAIL_HOST=your-smtp-host
+MAIL_PORT=587
+MAIL_USERNAME=your-mail-username
+MAIL_PASSWORD=your-mail-password
+MAIL_FROM_ADDRESS=bookings@example.com
+```
+
+The default `log` mailer is for local development and does not deliver email.
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:

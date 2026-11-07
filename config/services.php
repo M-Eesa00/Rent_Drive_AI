@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'booking' => [
+        'admin_email' => env('BOOKING_ADMIN_EMAIL', env('MAIL_FROM_ADDRESS')),
+    ],
+
 ];

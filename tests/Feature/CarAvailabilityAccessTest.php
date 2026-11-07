@@ -88,7 +88,7 @@ it('shows the complete searchable inventory only to administrators', function ()
         ->assertJsonFragment(['brand' => 'Unavailable', 'model' => 'SUV']);
 });
 
-it('prevents a customer from booking a car that is not available', function () {
+it('prevents customers from bypassing the date-aware booking wizard through the legacy endpoint', function () {
     $customer = User::create([
         'name' => 'Customer',
         'email' => 'booking-cars@example.test',
@@ -104,13 +104,12 @@ it('prevents a customer from booking a car that is not available', function () {
             'start_date' => now()->addDays(2)->toDateString(),
             'end_date' => now()->addDays(4)->toDateString(),
         ])
-        ->assertRedirect(route('cars.cars_list'))
-        ->assertSessionHasErrors('car_id');
+        ->assertForbidden();
 
     expect(Bookings::count())->toBe(0);
 });
 
-it('allows a customer to book an available car', function () {
+it('requires customers to use the date-aware booking wizard instead of the legacy endpoint', function () {
     $customer = User::create([
         'name' => 'Customer',
         'email' => 'available-booking@example.test',
@@ -125,13 +124,13 @@ it('allows a customer to book an available car', function () {
             'start_date' => now()->addDays(2)->toDateString(),
             'end_date' => now()->addDays(4)->toDateString(),
         ])
-        ->assertRedirect(route('show_booking_list'));
+        ->assertForbidden();
 
-    expect(Bookings::where('customer_id', $customer->id)->count())->toBe(1);
-    expect($car->fresh()->status)->toBe('rented');
+    expect(Bookings::where('customer_id', $customer->id)->count())->toBe(0);
+    expect($car->fresh()->status)->toBe('available');
 });
 
-it('returns a car to available when its booking is completed or cancelled', function () {
+it('returns a car to available when its booking is cancelled', function () {
     $admin = User::create([
         'name' => 'Admin',
         'email' => 'admin-booking-status@example.test',
@@ -145,29 +144,27 @@ it('returns a car to available when its booking is completed or cancelled', func
         'role' => 'user',
     ]);
 
-    foreach (['completed', 'cancelled'] as $status) {
-        $car = createCarForAvailabilityTest('Lifecycle', 'Car', "LIFECYCLE-{$status}", 'rented');
-        $booking = Bookings::create([
+    $car = createCarForAvailabilityTest('Lifecycle', 'Car', 'LIFECYCLE-CANCELLED', 'rented');
+    $booking = Bookings::create([
+        'car_id' => $car->id,
+        'customer_id' => $customer->id,
+        'start_date' => now()->addDays(2)->toDateString(),
+        'end_date' => now()->addDays(4)->toDateString(),
+        'total_price' => 200,
+        'status' => 'confirmed',
+        'payment_status' => 'unpaid',
+    ]);
+
+    $this->actingAs($admin)
+        ->put(route('bookings.update', $booking), [
             'car_id' => $car->id,
             'customer_id' => $customer->id,
             'start_date' => now()->addDays(2)->toDateString(),
             'end_date' => now()->addDays(4)->toDateString(),
-            'total_price' => 200,
-            'status' => 'confirmed',
+            'status' => 'cancelled',
             'payment_status' => 'unpaid',
-        ]);
+        ])
+        ->assertRedirect(route('show_booking_list'));
 
-        $this->actingAs($admin)
-            ->put(route('bookings.update', $booking), [
-                'car_id' => $car->id,
-                'customer_id' => $customer->id,
-                'start_date' => now()->addDays(2)->toDateString(),
-                'end_date' => now()->addDays(4)->toDateString(),
-                'status' => $status,
-                'payment_status' => 'unpaid',
-            ])
-            ->assertRedirect(route('show_booking_list'));
-
-        expect($car->fresh()->status)->toBe('available');
-    }
+    expect($car->fresh()->status)->toBe('available');
 });

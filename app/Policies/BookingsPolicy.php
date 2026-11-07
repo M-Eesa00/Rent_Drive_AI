@@ -24,11 +24,27 @@ class BookingsPolicy
 
     public function update(User $user, Bookings $booking): bool
     {
-        return $user->role === 'admin' || $user->id === $booking->customer_id;
+        return $user->role === 'admin'
+            || ($user->id === $booking->customer_id
+                && $booking->payment_status !== 'paid');
     }
 
     public function delete(User $user, Bookings $booking): bool
     {
-        return $user->role === 'admin' || $user->id === $booking->customer_id;
+        return $user->role === 'admin'
+            || ($user->id === $booking->customer_id
+                && $booking->payment_status !== 'paid');
+    }
+
+    public function requestReturn(User $user, Bookings $booking): bool
+    {
+        return ($user->role === 'admin' || $user->id === $booking->customer_id)
+            && in_array($booking->status, Bookings::RETURNABLE_STATUSES, true)
+            && ! $booking->isReturnRequested();
+    }
+
+    public function confirmReturn(User $user, Bookings $booking): bool
+    {
+        return $user->role === 'admin' && $booking->isDueForReturn();
     }
 }
