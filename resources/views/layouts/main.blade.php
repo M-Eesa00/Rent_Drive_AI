@@ -43,6 +43,9 @@
                         </li>
                         @if (auth()->user()?->role === 'admin')
                         <li class="nav-item">
+                            <a class="nav-link {{ Request::is('admin/calendar*') ? 'active' : '' }}" href="{{ route('admin.calendar') }}">Bookings calendar</a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link {{ Request::is('customers*') ? 'active' : '' }}" href="{{ route('customers.index') }}">Customers</a>
                         </li>
                         <li class="nav-item">
